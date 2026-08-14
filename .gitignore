@@ -1,0 +1,58 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# FastAPI / Python tooling
+*.log
+*.sqlite3
+*.db
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# Node / Angular
+node_modules/
+dist/
+build/
+.tmp/
+.npm/
+.angular/
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraform.lock.hcl
+
+# Ansible
+.retry
+
+# Kubernetes
+*.secret.yaml
+
+# Jenkins / CI artifacts
+coverage-final.json
