@@ -1,6 +1,7 @@
 """Deployment service."""
 from sqlalchemy.orm import Session
 
+from app.core.lifecycle import ensure_resource_transition, ensure_timestamp_order
 from app.models.deployment import Deployment
 from app.schemas.deployment import DeploymentCreate, DeploymentUpdate
 
@@ -27,7 +28,13 @@ class DeploymentService:
         item = DeploymentService.get(db, item_id)
         if not item:
             return None
-        for key, value in payload.model_dump(exclude_unset=True).items():
+        values = payload.model_dump(exclude_unset=True)
+        ensure_resource_transition(item.status, values.get("status", item.status))
+        ensure_timestamp_order(
+            values.get("started_at", item.started_at),
+            values.get("finished_at", item.finished_at),
+        )
+        for key, value in values.items():
             setattr(item, key, value)
         db.commit()
         db.refresh(item)

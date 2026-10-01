@@ -1,4 +1,7 @@
 """Tests for the pipeline execution lifecycle."""
+import subprocess
+
+import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
@@ -57,3 +60,57 @@ def test_pending_run_can_be_cancelled(client: TestClient):
 
     second_cancel = client.post(f"/runs/{run_id}/cancel", headers=headers)
     assert second_cancel.status_code == 409
+
+
+def test_terminal_run_transitions_are_rejected(client: TestClient):
+    run_id, headers = create_run(client)
+    assert client.put(f"/runs/{run_id}", headers=headers, json={"status": "success"}).status_code == 200
+    success_to_running = client.put(
+        f"/runs/{run_id}", headers=headers, json={"status": "running"}
+    )
+    assert success_to_running.status_code == 409
+
+    cancelled_run_id, cancelled_headers = create_run(client)
+    assert client.post(
+        f"/runs/{cancelled_run_id}/cancel", headers=cancelled_headers
+    ).status_code == 200
+    cancelled_to_success = client.put(
+        f"/runs/{cancelled_run_id}",
+        headers=cancelled_headers,
+        json={"status": "success"},
+    )
+    assert cancelled_to_success.status_code == 409
+
+
+def test_terraform_validation_persists_command_output(
+    client: TestClient, db_session: Session, monkeypatch: pytest.MonkeyPatch
+):
+    run_id, headers = create_run(client)
+    generated = client.post(
+        "/generated-files",
+        headers=headers,
+        json={
+            "run_id": run_id,
+            "file_type": "terraform",
+            "path": "main.tf",
+            "content": 'terraform { required_version = ">= 1.0.0" }',
+        },
+    )
+    assert generated.status_code == 201
+
+    calls: list[list[str]] = []
+
+    def fake_run(command, **kwargs):
+        calls.append(command)
+        return subprocess.CompletedProcess(command, 0, "terraform stdout", "terraform stderr")
+
+    monkeypatch.setattr("app.services.execution.shutil.which", lambda _: "terraform")
+    monkeypatch.setattr("app.services.execution.subprocess.run", fake_run)
+
+    assert execute_run_in_session(db_session, run_id) == "success"
+    validations = client.get("/validations", headers=headers).json()
+    assert len(validations) == 1
+    assert validations[0]["status"] == "success"
+    assert validations[0]["stdout"] == "terraform stdout\nterraform stdout\nterraform stdout"
+    assert validations[0]["exit_code"] == 0
+    assert len(calls) == 3

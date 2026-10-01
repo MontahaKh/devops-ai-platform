@@ -19,6 +19,10 @@ class Validation(Base):
     validation_type: Mapped[str] = mapped_column(String(50), nullable=False)
     status: Mapped[str] = mapped_column(String(30), index=True, nullable=False)
     message: Mapped[str | None] = mapped_column(Text, nullable=True)
+    stdout: Mapped[str | None] = mapped_column(Text, nullable=True)
+    stderr: Mapped[str | None] = mapped_column(Text, nullable=True)
+    command: Mapped[str | None] = mapped_column(String(1000), nullable=True)
+    exit_code: Mapped[int | None] = mapped_column(nullable=True)
     executed_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
 
     run: Mapped["Run"] = relationship("Run", back_populates="validations")

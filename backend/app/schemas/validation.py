@@ -11,12 +11,20 @@ class ValidationCreate(BaseModel):
     validation_type: str = Field(..., min_length=1, max_length=50)
     status: ValidationStatus
     message: str | None = None
+    stdout: str | None = None
+    stderr: str | None = None
+    command: str | None = None
+    exit_code: int | None = None
     executed_at: datetime
 
 
 class ValidationUpdate(BaseModel):
     status: ValidationStatus | None = None
     message: str | None = None
+    stdout: str | None = None
+    stderr: str | None = None
+    command: str | None = None
+    exit_code: int | None = None
     executed_at: datetime | None = None
 
 

@@ -88,7 +88,10 @@ def update_run(
     current_user: User = Depends(get_current_user),
 ):
     get_run_or_404(db, run_id, current_user)
-    item = RunService.update(db, run_id, payload)
+    try:
+        item = RunService.update(db, run_id, payload)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
     if not item:
         raise HTTPException(status_code=404, detail="Run not found")
     return item

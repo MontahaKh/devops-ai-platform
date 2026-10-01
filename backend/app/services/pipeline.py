@@ -8,7 +8,8 @@ from app.schemas.pipeline import PipelineCreate, PipelineUpdate
 class PipelineService:
     @staticmethod
     def create(db: Session, payload: PipelineCreate) -> Pipeline:
-        item = Pipeline(**payload.model_dump())
+        values = payload.model_dump(mode="json")
+        item = Pipeline(**values)
         db.add(item)
         db.commit()
         db.refresh(item)
@@ -27,7 +28,8 @@ class PipelineService:
         item = PipelineService.get(db, item_id)
         if not item:
             return None
-        for key, value in payload.model_dump(exclude_unset=True).items():
+        values = payload.model_dump(mode="json", exclude_unset=True)
+        for key, value in values.items():
             setattr(item, key, value)
         db.commit()
         db.refresh(item)

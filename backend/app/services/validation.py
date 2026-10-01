@@ -1,6 +1,7 @@
 """Validation service."""
 from sqlalchemy.orm import Session
 
+from app.core.lifecycle import ensure_resource_transition, ensure_timestamp_order
 from app.models.validation import Validation
 from app.schemas.validation import ValidationCreate, ValidationUpdate
 
@@ -27,7 +28,13 @@ class ValidationService:
         item = ValidationService.get(db, item_id)
         if not item:
             return None
-        for key, value in payload.model_dump(exclude_unset=True).items():
+        values = payload.model_dump(exclude_unset=True)
+        ensure_resource_transition(item.status, values.get("status", item.status))
+        ensure_timestamp_order(
+            item.executed_at,
+            values.get("executed_at", item.executed_at),
+        )
+        for key, value in values.items():
             setattr(item, key, value)
         db.commit()
         db.refresh(item)
