@@ -1,0 +1,83 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: devops_ai_platform
+      POSTGRES_USER: devops_app
+      POSTGRES_PASSWORD: change_me
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U devops_app -d devops_ai_platform"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  postgres-test:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: devops_ai_platform_test
+      POSTGRES_USER: devops_test
+      POSTGRES_PASSWORD: change_me
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_test_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U devops_test -d devops_ai_platform_test"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:
+    build:
+      context: ./backend
+    environment:
+      DATABASE_URL: postgresql+psycopg://devops_app:change_me@postgres:5432/devops_ai_platform
+      JWT_SECRET_KEY: replace_with_a_random_secret_at_least_32_characters_long
+      REDIS_URL: redis://redis:6379/0
+      TASK_QUEUE_ENABLED: ${TASK_QUEUE_ENABLED:-false}
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: >-
+      sh -c "alembic upgrade head &&
+      uvicorn app.main:app --host 0.0.0.0 --port 8000"
+
+  worker:
+    build:
+      context: ./backend
+    environment:
+      DATABASE_URL: postgresql+psycopg://devops_app:change_me@postgres:5432/devops_ai_platform
+      JWT_SECRET_KEY: replace_with_a_random_secret_at_least_32_characters_long
+      REDIS_URL: redis://redis:6379/0
+      TASK_QUEUE_ENABLED: "true"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: celery -A app.workers.celery_app.celery_app worker --loglevel=INFO --pool=solo
+
+volumes:
+  postgres_data:
+  postgres_test_data:
+  redis_data:
