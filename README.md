@@ -65,6 +65,15 @@ Le worker Celery utilise Redis comme broker et backend de résultats. Les runs
 créés par l'API sont alors envoyés à la file de tâches; les erreurs temporaires
 sont réessayées selon `RUN_MAX_RETRIES`.
 
+Le cycle d'exécution manuel suit cet ordre :
+
+1. créer un run avec `POST /runs` ;
+2. ajouter les fichiers Terraform avec `POST /generated-files` ;
+3. lancer le run avec `POST /runs/{run_id}/execute`.
+
+La création d'un run ne lance pas automatiquement l'exécution. Cette séparation
+permet de préparer et vérifier les fichiers avant de démarrer Terraform.
+
 ### Migrations
 
 Lorsque PostgreSQL est disponible :

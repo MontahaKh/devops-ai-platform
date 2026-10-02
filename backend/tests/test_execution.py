@@ -114,3 +114,36 @@ def test_terraform_validation_persists_command_output(
     assert validations[0]["stdout"] == "terraform stdout\nterraform stdout\nterraform stdout"
     assert validations[0]["exit_code"] == 0
     assert len(calls) == 3
+
+
+def test_run_is_executed_only_after_files_are_added(
+    client: TestClient,
+    db_session: Session,
+    monkeypatch: pytest.MonkeyPatch,
+):
+    run_id, headers = create_run(client)
+    assert client.get(f"/runs/{run_id}", headers=headers).json()["status"] == "pending"
+    assert client.post(f"/runs/{run_id}/execute", headers=headers).status_code == 409
+
+    generated = client.post(
+        "/generated-files",
+        headers=headers,
+        json={
+            "run_id": run_id,
+            "file_type": "terraform",
+            "path": "main.tf",
+            "content": 'terraform { required_version = ">= 1.0.0" }',
+        },
+    )
+    assert generated.status_code == 201
+
+    monkeypatch.setattr("app.routers.run.settings.task_queue_enabled", False)
+    monkeypatch.setattr("app.services.execution.shutil.which", lambda _: "terraform")
+    monkeypatch.setattr(
+        "app.services.execution.subprocess.run",
+        lambda command, **kwargs: subprocess.CompletedProcess(command, 0, "", ""),
+    )
+
+    response = client.post(f"/runs/{run_id}/execute", headers=headers)
+    assert response.status_code == 200
+    assert response.json()["status"] == "success"

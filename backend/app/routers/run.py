@@ -14,6 +14,7 @@ from app.models.project import Project
 from app.models.run import Run
 from app.models.user import User
 from app.schemas.run import RunCreate, RunRead, RunUpdate
+from app.services.execution import execute_run_in_session
 from app.services.run import RunService
 from app.workers.celery_app import celery_app
 from app.workers.tasks import execute_run_task
@@ -28,7 +29,28 @@ def create_run(
     current_user: User = Depends(get_current_user),
 ):
     get_pipeline_or_404(db, payload.pipeline_id, current_user)
-    run = RunService.create(db, payload)
+    return RunService.create(db, payload)
+
+
+@router.post("/{run_id}/execute", response_model=RunRead)
+def execute_run_endpoint(
+    run_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Start a pending run after its generated files have been prepared."""
+    run = get_run_or_404(db, run_id, current_user)
+    if run.status != "pending":
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Only pending runs can be executed",
+        )
+    if not any(item.file_type == "terraform" for item in run.generated_files):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="At least one Terraform file is required before execution",
+        )
+
     if settings.task_queue_enabled:
         try:
             task = execute_run_task.apply_async(
@@ -48,6 +70,18 @@ def create_run(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                 detail="Execution queue is unavailable",
             ) from exc
+    else:
+        try:
+            execute_run_in_session(db, run.id)
+        except Exception as exc:
+            db.rollback()
+            db.refresh(run)
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=str(exc),
+            ) from exc
+
+    db.refresh(run)
     return run
 
 
