@@ -24,7 +24,13 @@ def create_generated_file(
     current_user: User = Depends(get_current_user),
 ):
     get_run_or_404(db, payload.run_id, current_user)
-    return GeneratedFileService.create(db, payload)
+    try:
+        return GeneratedFileService.create(db, payload)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(exc),
+        ) from exc
 
 
 @router.get("", response_model=list[GeneratedFileRead])
@@ -55,7 +61,13 @@ def update_generated_file(
     current_user: User = Depends(get_current_user),
 ):
     get_generated_file_or_404(db, file_id, current_user)
-    item = GeneratedFileService.update(db, file_id, payload)
+    try:
+        item = GeneratedFileService.update(db, file_id, payload)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(exc),
+        ) from exc
     if not item:
         raise HTTPException(status_code=404, detail="Generated file not found")
     return item

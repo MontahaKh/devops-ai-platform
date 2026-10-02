@@ -22,7 +22,7 @@ class PipelineStep(BaseModel):
 
 
 class ValidationStrategy(BaseModel):
-    terraform_commands: list[Literal["fmt", "validate"]] = Field(
+    terraform_commands: list[Literal["fmt", "validate", "plan"]] = Field(
         default_factory=lambda: ["fmt", "validate"]
     )
     fail_on_warnings: bool = False

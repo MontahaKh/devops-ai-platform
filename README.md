@@ -70,9 +70,19 @@ Le cycle d'exécution manuel suit cet ordre :
 1. créer un run avec `POST /runs` ;
 2. ajouter les fichiers Terraform avec `POST /generated-files` ;
 3. lancer le run avec `POST /runs/{run_id}/execute`.
+4. consulter les résultats avec `GET /runs/{run_id}/logs`.
 
 La création d'un run ne lance pas automatiquement l'exécution. Cette séparation
 permet de préparer et vérifier les fichiers avant de démarrer Terraform.
+
+Les fichiers générés sont validés avant leur enregistrement : les chemins doivent
+être relatifs et utiliser `/`, les fichiers Terraform doivent se terminer par
+`.tf` ou `.tf.json`, le contenu ne doit pas être vide et sa taille est limitée
+à 1 MiB.
+
+Une stratégie de pipeline peut également inclure `plan` après `fmt` et
+`validate`. Cette commande affiche les changements Terraform prévus sans
+appliquer de ressources. `terraform apply` n'est pas exécuté par l'API.
 
 ### Migrations
 

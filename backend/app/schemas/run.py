@@ -4,6 +4,7 @@ from datetime import datetime
 from pydantic import BaseModel, Field
 
 from app.core.domain_enums import RunStatus
+from app.schemas.validation import ValidationRead
 
 
 class RunCreate(BaseModel):
@@ -34,3 +35,9 @@ class RunRead(BaseModel):
     celery_task_id: str | None
 
     model_config = {"from_attributes": True}
+
+
+class RunLogsRead(BaseModel):
+    run_id: int
+    status: RunStatus
+    validations: list[ValidationRead]

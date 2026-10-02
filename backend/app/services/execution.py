@@ -91,12 +91,15 @@ def _execute_terraform_validation(
     strategy = definition.validation_strategy.terraform_commands
     if "fmt" in strategy:
         commands.append([terraform, "fmt", "-check", "-diff", "-no-color"])
+    if "validate" in strategy or "plan" in strategy:
+        commands.append(
+            [terraform, "init", "-backend=false", "-input=false", "-no-color"]
+        )
     if "validate" in strategy:
-        commands.extend(
-            [
-                [terraform, "init", "-backend=false", "-input=false", "-no-color"],
-                [terraform, "validate", "-no-color"],
-            ]
+        commands.append([terraform, "validate", "-no-color"])
+    if "plan" in strategy:
+        commands.append(
+            [terraform, "plan", "-input=false", "-refresh=false", "-no-color"]
         )
 
     stdout_parts: list[str] = []
@@ -125,7 +128,11 @@ def _execute_terraform_validation(
                     break
             else:
                 validation.status = "success"
-                validation.message = "Terraform validation completed successfully."
+                validation.message = (
+                    "Terraform validation and plan completed successfully."
+                    if "plan" in strategy
+                    else "Terraform validation completed successfully."
+                )
                 validation.exit_code = 0
     except subprocess.TimeoutExpired as exc:
         validation.status = "failed"

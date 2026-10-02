@@ -13,7 +13,7 @@ from app.models.pipeline import Pipeline
 from app.models.project import Project
 from app.models.run import Run
 from app.models.user import User
-from app.schemas.run import RunCreate, RunRead, RunUpdate
+from app.schemas.run import RunCreate, RunLogsRead, RunRead, RunUpdate
 from app.services.execution import execute_run_in_session
 from app.services.run import RunService
 from app.workers.celery_app import celery_app
@@ -74,8 +74,13 @@ def execute_run_endpoint(
         try:
             execute_run_in_session(db, run.id)
         except Exception as exc:
-            db.rollback()
             db.refresh(run)
+            if run.status in {"pending", "running"}:
+                run.status = "failed"
+                run.error_summary = str(exc)[:4000]
+                run.finished_at = datetime.now(timezone.utc)
+                db.commit()
+                db.refresh(run)
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                 detail=str(exc),
@@ -83,6 +88,21 @@ def execute_run_endpoint(
 
     db.refresh(run)
     return run
+
+
+@router.get("/{run_id}/logs", response_model=RunLogsRead)
+def get_run_logs(
+    run_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Return validation logs for an accessible run."""
+    run = get_run_or_404(db, run_id, current_user)
+    return RunLogsRead(
+        run_id=run.id,
+        status=run.status,
+        validations=run.validations,
+    )
 
 
 @router.get("", response_model=list[RunRead])
