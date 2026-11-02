@@ -1,0 +1,100 @@
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark">D</div>
+      <div>
+        <strong>DevOps AI</strong>
+        <span>Platform</span>
+      </div>
+    </div>
+
+    <div class="workspace-label">WORKSPACE</div>
+    <nav class="main-nav" aria-label="Main navigation">
+      <a class="active" href="#"><span class="nav-icon">⌂</span>Dashboard</a>
+      <a href="#"><span class="nav-icon">▦</span>Projects</a>
+      <a href="#"><span class="nav-icon">◈</span>Pipelines</a>
+      <a href="#"><span class="nav-icon">↻</span>Runs</a>
+      <a href="#"><span class="nav-icon">⌘</span>Terraform files</a>
+    </nav>
+
+    <div class="workspace-label">TOOLS</div>
+    <nav class="main-nav">
+      <a href="#"><span class="nav-icon">✦</span>AI Generator <span class="new-badge">NEW</span></a>
+      <a href="#"><span class="nav-icon">▤</span>Validation logs</a>
+      <a href="#"><span class="nav-icon">◉</span>Terraform plan</a>
+    </nav>
+
+    <div class="sidebar-bottom">
+      <a href="#"><span class="nav-icon">⚙</span>Settings</a>
+      <div class="profile">
+        <div class="avatar">MK</div>
+        <div><strong>Montaha</strong><span>Administrator</span></div>
+        <span class="more">•••</span>
+      </div>
+    </div>
+  </aside>
+
+  <main class="content">
+    <header class="topbar">
+      <div class="breadcrumbs"><span>Workspace</span><b>/</b><strong>Dashboard</strong></div>
+      <div class="topbar-actions">
+        <button class="icon-button" aria-label="Notifications">♧<span class="notification-dot"></span></button>
+        <button class="help-button">? <span>Help center</span></button>
+        <div class="top-avatar">MK</div>
+      </div>
+    </header>
+
+    <div class="page">
+      <section class="page-heading">
+        <div>
+          <p class="eyebrow">OVERVIEW</p>
+          <h1>Good morning, Montaha <span>✦</span></h1>
+          <p class="subtitle">Here’s what’s happening with your infrastructure today.</p>
+        </div>
+        <button class="primary-button">+ <span>New project</span></button>
+      </section>
+
+      <section class="stats-grid">
+        @for (stat of stats; track stat.label) {
+          <article class="stat-card">
+            <div class="stat-top"><span>{{ stat.label }}</span><span class="stat-icon {{ stat.tone }}">{{ stat.icon }}</span></div>
+            <div class="stat-value">{{ stat.value }}</div>
+            <div class="stat-detail" [class.warning]="stat.tone === 'orange'">{{ stat.detail }}</div>
+          </article>
+        }
+      </section>
+
+      <section class="dashboard-grid">
+        <article class="panel runs-panel">
+          <div class="panel-heading">
+            <div><h2>Recent runs</h2><p>Latest activity across your projects</p></div>
+            <a href="#">View all <span>→</span></a>
+          </div>
+          <div class="run-list">
+            @for (run of recentRuns; track run.name) {
+              <div class="run-row">
+                <div class="run-status" [class]="run.status.toLowerCase()"></div>
+                <div class="run-info"><strong>{{ run.name }}</strong><span>{{ run.project }}</span></div>
+                <span class="status-pill" [class]="run.status.toLowerCase()">{{ run.status }}</span>
+                <div class="run-time"><span>{{ run.time }}</span><small>{{ run.duration }}</small></div>
+                <span class="row-arrow">›</span>
+              </div>
+            }
+          </div>
+        </article>
+
+        <article class="panel terraform-panel">
+          <div class="panel-heading"><div><h2>Terraform status</h2><p>Environment health</p></div><span class="healthy-dot">● Healthy</span></div>
+          <div class="terraform-visual"><div class="terraform-ring"><strong>98<span>%</span></strong><small>Healthy</small></div></div>
+          <div class="health-items"><div><span><i class="green-dot"></i>Providers</span><strong>4 / 4</strong></div><div><span><i class="green-dot"></i>State backend</span><strong>Synced</strong></div><div><span><i class="yellow-dot"></i>Pending changes</span><strong>2 resources</strong></div></div>
+          <button class="secondary-button">View Terraform plan <span>→</span></button>
+        </article>
+      </section>
+
+      <section class="panel activity-panel">
+        <div class="panel-heading"><div><h2>Deployment activity</h2><p>Success rate over the last 7 days</p></div><button class="select-button">Last 7 days⌄</button></div>
+        <div class="chart"><div class="chart-labels"><span>100%</span><span>75%</span><span>50%</span><span>25%</span><span>0%</span></div><div class="chart-area"><div class="chart-grid"></div><svg viewBox="0 0 700 140" preserveAspectRatio="none" aria-label="Deployment success rate chart"><defs><linearGradient id="area" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#6c63ff" stop-opacity=".32"/><stop offset="1" stop-color="#6c63ff" stop-opacity="0"/></linearGradient></defs><path class="chart-fill" d="M0,75 C45,68 60,85 105,63 S170,72 210,50 S275,62 320,43 S380,58 420,35 S480,52 525,30 S590,42 630,22 S675,30 700,18 L700,140 L0,140Z"/><path class="chart-line" d="M0,75 C45,68 60,85 105,63 S170,72 210,50 S275,62 320,43 S380,58 420,35 S480,52 525,30 S590,42 630,22 S675,30 700,18"/></svg><div class="chart-days"><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span></div></div></div>
+      </section>
+    </div>
+  </main>
+</div>

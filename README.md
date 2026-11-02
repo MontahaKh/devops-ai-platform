@@ -154,4 +154,76 @@ docker compose down -v
 Le workflow GitHub Actions `.github/workflows/ci.yml` s'exécute sur les
 pull requests et les pushes vers `main`. Il installe les dépendances backend,
 applique les migrations PostgreSQL, exécute les tests (y compris les tests
-d'intégration PostgreSQL) et vérifie la configuration Docker Compose.
+d'intégration PostgreSQL), construit et teste le frontend Angular, puis vérifie
+la configuration Docker Compose.
+
+## Frontend Angular
+
+Le frontend est disponible dans `frontend/`. Il contient un shell Dashboard
+connecté aux routes backend pour l'authentification, les projets, les pipelines,
+les runs, les fichiers Terraform et les logs de validation.
+
+Démarrer les services backend :
+
+```powershell
+docker compose up -d postgres redis api
+```
+
+Puis démarrer Angular dans un autre terminal :
+
+```powershell
+cd frontend
+npm.cmd install
+npm.cmd start
+```
+
+L'interface est disponible sur `http://127.0.0.1:4200`. Le token JWT est
+conservé dans le stockage local du navigateur et ajouté automatiquement aux
+requêtes API. Le parcours Terraform dans l'interface respecte le cycle :
+
+```text
+Créer un pipeline -> créer un run depuis la page Runs
+-> ajouter ou modifier un fichier .tf -> exécuter le run
+-> suivre le statut -> consulter les logs
+```
+
+La page Runs permet de choisir le pipeline, de définir le nombre de tentatives
+et le délai d'exécution, puis de suivre automatiquement un run en cours. La
+page Terraform files permet de créer plusieurs fichiers `.tf`, de modifier
+leur contenu et d'incrémenter leur version avant l'exécution.
+
+Les tests frontend ciblés couvrent le chargement et la création d'un run ainsi
+que l'édition et la sauvegarde d'un fichier Terraform :
+
+```powershell
+cd frontend
+npm.cmd test
+```
+
+Les routes frontend actuellement disponibles sont `/login`, `/register`,
+`/dashboard`, `/projects`, `/pipelines`, `/runs`, `/validation-logs`,
+`/terraform-files`, `/profile`, `/admin`, `/users` et `/runs/:id/logs`.
+
+Le frontend applique également le RBAC visible : chaque utilisateur peut
+consulter et modifier son profil, tandis que les pages `/admin` et `/users`
+sont réservées au rôle `admin`. L'API filtre déjà les projets, pipelines, runs,
+fichiers et logs par propriétaire ; un utilisateur standard ne reçoit donc pas
+les ressources des autres utilisateurs. Un administrateur peut consulter les
+ressources globales et gérer les rôles depuis le centre d'administration.
+
+La page `/register` permet maintenant de créer un compte utilisateur standard.
+La création du premier administrateur est volontairement séparée de
+l'inscription publique. Pour initialiser ou mettre à jour un administrateur
+dans Docker, définir les variables suivantes avant le démarrage :
+
+```powershell
+$env:ADMIN_SEED_ENABLED="true"
+$env:ADMIN_USERNAME="admin"
+$env:ADMIN_EMAIL="admin@example.com"
+$env:ADMIN_PASSWORD="change-this-password"
+docker compose up -d postgres redis api
+```
+
+Le seed est idempotent : il crée le compte s'il n'existe pas et met à jour son
+rôle, son mot de passe et son état actif s'il existe déjà. Ne pas utiliser un
+mot de passe de développement en production.

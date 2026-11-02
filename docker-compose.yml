@@ -51,6 +51,10 @@ services:
       JWT_SECRET_KEY: replace_with_a_random_secret_at_least_32_characters_long
       REDIS_URL: redis://redis:6379/0
       TASK_QUEUE_ENABLED: ${TASK_QUEUE_ENABLED:-false}
+      ADMIN_SEED_ENABLED: ${ADMIN_SEED_ENABLED:-false}
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
     ports:
       - "8000:8000"
     depends_on:
@@ -60,6 +64,7 @@ services:
         condition: service_healthy
     command: >-
       sh -c "alembic upgrade head &&
+      if [ \"$$ADMIN_SEED_ENABLED\" = \"true\" ]; then python -m app.scripts.seed_admin; fi &&
       uvicorn app.main:app --host 0.0.0.0 --port 8000"
 
   worker:
